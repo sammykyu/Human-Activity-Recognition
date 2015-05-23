@@ -1,0 +1,173 @@
+---
+title: "Prediction of Weight Lifting Exercises Quality"
+author: "S. Yu"
+date: "May 22, 2015"
+output: html_document
+---
+
+  
+  
+###I. Introduction  
+
+This is a study in machine learning to find a good-fit algorithm which can predict how well people do weight lifting exercises using a dumbbell. The data was obtained from the Human Activity Recognition web site. The output variable I am interested in is the "Classe" which is a categorial variable in 5 possible values (A, B, C, D, E). For more information about the data set, please visit the [HAR web site](http://groupware.les.inf.puc-rio.br/har).  
+
+
+###II. Loading Libaries and Training Data  
+
+```{r}
+library(lattice)
+library(ggplot2)
+library(caret)
+data <- read.csv("https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv")
+
+set.seed(2046)
+## partition the original training data into a training set (70%) and a validation set (30%)
+inTrain <- createDataPartition(y=data$classe, p=0.7, list=FALSE)
+training <- data[inTrain,]
+validation <- data[-inTrain,]
+
+```
+
+###III. Exploratory Data Analysis  
+
+The original training data has 19622 observations and 160 variables. The last variable (or column) is "classe".  
+
+The structure of the training data is printed below:  
+
+```{r}
+str(training, list.len=200)
+
+```
+  
+To take a quick look at the correlation of the predictor variables with the output variable "classe", a feature plot of 4 predictors against "Classe" is plotted below:  
+
+```{r}
+featurePlot(x=training[, c("roll_belt","pitch_belt","yaw_belt","total_accel_belt")], y=training$classe, plot="pairs")
+```
+
+
+###IV. Pre-process Training Data  
+
+The first 7 columns in the data set are the general data. They are the row number (variable X), the name of the subject (user_name), timestamp and time-window of each observation. The output variable "Classe" should not depend on the row number and user name. So they are going to be removed before the training. Timestamp and snapshot window are useful for studying how often people do excercise, but they are not quite related to the study of exercise quality. So they are to be removed as well.  
+
+Some variables in the original data have many invalid values (> 95%), such as "#DIV/0!" and missing values (NA). When a variable has so many these kinds of value, it would not be a good contributor to the prediction model. In this case, they are removed from the data set.  
+
+
+```{r, message=FALSE, warning=FALSE}
+## Convert invalid value "#DIV/0!" and empty string into NA
+training[training == "#DIV/0!" ] = NA
+training[training == "" ] = NA
+
+## Convert factor variables into numeric variables
+training$kurtosis_roll_belt <- as.numeric(levels(training$kurtosis_roll_belt))[training$kurtosis_roll_belt]
+training$kurtosis_picth_belt <- as.numeric(levels(training$kurtosis_picth_belt))[training$kurtosis_picth_belt]
+training$kurtosis_yaw_belt <- as.numeric(levels(training$kurtosis_yaw_belt))[training$kurtosis_yaw_belt]
+training$skewness_roll_belt <- as.numeric(levels(training$skewness_roll_belt))[training$skewness_roll_belt]
+training$skewness_roll_belt.1 <- as.numeric(levels(training$skewness_roll_belt.1))[training$skewness_roll_belt.1]
+training$skewness_yaw_belt <- as.numeric(levels(training$skewness_yaw_belt))[training$skewness_yaw_belt]
+training$max_yaw_belt <- as.numeric(levels(training$max_yaw_belt))[training$max_yaw_belt]
+training$min_yaw_belt <- as.numeric(levels(training$min_yaw_belt))[training$min_yaw_belt]
+training$amplitude_yaw_belt <- as.numeric(levels(training$amplitude_yaw_belt))[training$amplitude_yaw_belt]
+training$kurtosis_roll_arm <- as.numeric(levels(training$kurtosis_roll_arm))[training$kurtosis_roll_arm]
+training$kurtosis_picth_arm <- as.numeric(levels(training$kurtosis_picth_arm))[training$kurtosis_picth_arm]
+training$kurtosis_yaw_arm <- as.numeric(levels(training$kurtosis_yaw_arm))[training$kurtosis_yaw_arm]
+training$skewness_roll_arm <- as.numeric(levels(training$skewness_roll_arm))[training$skewness_roll_arm]
+training$skewness_pitch_arm <- as.numeric(levels(training$skewness_pitch_arm))[training$skewness_pitch_arm]
+training$skewness_yaw_arm <- as.numeric(levels(training$skewness_yaw_arm))[training$skewness_yaw_arm]
+training$kurtosis_roll_dumbbell <- as.numeric(levels(training$kurtosis_roll_dumbbell))[training$kurtosis_roll_dumbbell]
+training$kurtosis_picth_dumbbell <- as.numeric(levels(training$kurtosis_picth_dumbbell))[training$kurtosis_picth_dumbbell]
+training$kurtosis_yaw_dumbbell <- as.numeric(levels(training$kurtosis_yaw_dumbbell))[training$kurtosis_yaw_dumbbell]
+training$skewness_roll_dumbbell <- as.numeric(levels(training$skewness_roll_dumbbell))[training$skewness_roll_dumbbell]
+training$skewness_pitch_dumbbell <- as.numeric(levels(training$skewness_pitch_dumbbell))[training$skewness_pitch_dumbbell]
+training$skewness_yaw_dumbbell <- as.numeric(levels(training$skewness_yaw_dumbbell))[training$skewness_yaw_dumbbell]
+training$max_yaw_dumbbell <- as.numeric(levels(training$max_yaw_dumbbell))[training$max_yaw_dumbbell]
+training$min_yaw_dumbbell <- as.numeric(levels(training$min_yaw_dumbbell))[training$min_yaw_dumbbell]
+training$amplitude_yaw_dumbbell <- as.numeric(levels(training$amplitude_yaw_dumbbell))[training$amplitude_yaw_dumbbell]
+training$kurtosis_roll_forearm <- as.numeric(levels(training$kurtosis_roll_forearm))[training$kurtosis_roll_forearm]
+training$kurtosis_picth_forearm <- as.numeric(levels(training$kurtosis_picth_forearm))[training$kurtosis_picth_forearm]
+training$kurtosis_yaw_forearm <- as.numeric(levels(training$kurtosis_yaw_forearm))[training$kurtosis_yaw_forearm]
+training$skewness_roll_forearm <- as.numeric(levels(training$skewness_roll_forearm))[training$skewness_roll_forearm]
+training$skewness_pitch_forearm <- as.numeric(levels(training$skewness_pitch_forearm))[training$skewness_pitch_forearm]
+training$skewness_yaw_forearm <- as.numeric(levels(training$skewness_yaw_forearm))[training$skewness_yaw_forearm]
+training$max_yaw_forearm <- as.numeric(levels(training$max_yaw_forearm))[training$max_yaw_forearm]
+training$min_yaw_forearm <- as.numeric(levels(training$min_yaw_forearm))[training$min_yaw_forearm]
+training$amplitude_yaw_forearm <- as.numeric(levels(training$amplitude_yaw_forearm))[training$amplitude_yaw_forearm]
+
+## remove the columns with more than 95% missing values, i.e. NA
+training <- training[,(colSums(is.na(training))/nrow(training)) < 0.95]
+
+## remove the first seven unrelated columns, i.e. row number, user name, timestamp and time windows.
+training <- training[, -(1:7)]
+
+```
+
+###V. Cross Validation Setup  
+
+```{r}
+
+## Set up 10-fold cross validation in training
+ctrl <- trainControl(method="cv", number = 10)
+```
+
+###VI. Machine Learning Algorithm Trainings
+
+We select 4 different algorithms to get trained here to see which one would perform the best.
+
+```{r, message=FALSE, warning=FALSE, cache=TRUE}
+
+# Linear Discriminant Analysis (LDA)
+modFit_LDA <- train(classe ~ ., data=training, method="lda", trControl=ctrl, verbose=F)
+
+# Bagging
+modFit_BAG <- train(classe ~ ., data=training, method="treebag", trControl=ctrl)
+
+# Boosting
+modFit_GBM <- train(classe ~ ., data=training, method="gbm", trControl=ctrl, verbose=FALSE)
+
+# Random Forest
+modFit_RF <- train(classe ~ ., data=training, method="rf", trControl=ctrl, importance = TRUE)
+
+```
+
+###VII. Model Validation
+
+The validation set which was set aside earlier is used to evaluate the models here.
+
+```{r}
+# LDA
+cm_LDA <- confusionMatrix(validation$classe, predict(modFit_LDA, validation)); cm_LDA
+
+# Bagging
+cm_BAG <- confusionMatrix(validation$classe, predict(modFit_BAG, validation)); cm_BAG
+
+# Boosting
+cm_GBM <- confusionMatrix(validation$classe, predict(modFit_GBM, validation)); cm_GBM
+
+# Random Forest
+cm_RF <- confusionMatrix(validation$classe, predict(modFit_RF, validation)); cm_RF
+
+```
+
+###VIII. Conclusion  
+
+```{r, echo=FALSE}
+accuracy_LDA <- round(cm_LDA$overall['Accuracy'], 4)
+accuracy_BAG <- round(cm_BAG$overall['Accuracy'], 4)
+accuracy_GBM <- round(cm_GBM$overall['Accuracy'], 4)
+accuracy_RF <- round(cm_RF$overall['Accuracy'], 4)
+```
+Expected Out of Sample Error rate of the models:  
+
+* LDA: **`r (1 - accuracy_LDA)`** (accuracy `r accuracy_LDA`)  
+* Bagging: **`r (1 - accuracy_BAG)`** (accuracy `r accuracy_BAG`)   
+* Boosting: **`r (1 - accuracy_GBM)`** (accuracy `r accuracy_GBM`)   
+* Random Forest: **`r (1 - accuracy_RF)`** (accuracy `r accuracy_RF`)   
+    
+Among these models, **Random Forest** takes a little longer time to train (about 40 minutes), but it has the highest prediction accuracy (**`r accuracy_RF`**) or the lowest error rate (**`r (1 - accuracy_RF)`**). Based on these, it is selected as the prediction model.  
+
+The prediction of 20 test cases from a different data set using Random Forest is to be submitted separately.  
+  
+    
+
+
+
