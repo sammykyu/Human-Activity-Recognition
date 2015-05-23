@@ -9,7 +9,7 @@ output: html_document
   
 ###I. Introduction  
 
-This is a study in machine learning to find a good-fit algorithm which can predict how well people do weight lifting exercises using a dumbbell. The data was obtained from the Human Activity Recognition web site. The output variable I am interested in is the "Classe" which is a categorial variable in 5 possible values (A, B, C, D, E). For more information about the data set, please visit the [HAR web site](http://groupware.les.inf.puc-rio.br/har).  
+This is a study in machine learning to find a good-fit algorithm which can predict how well people do weight lifting exercises using a dumbbell. The data was obtained from the Human Activity Recognition web site. The output variable we are interested in is the "Classe" which is a categorial variable in 5 possible values (A, B, C, D, E). For more information about the data set, please visit the [HAR web site](http://groupware.les.inf.puc-rio.br/har).  
 
 
 ###II. Loading Libaries and Training Data  
@@ -50,7 +50,7 @@ featurePlot(x=training[, c("roll_belt","pitch_belt","yaw_belt","total_accel_belt
 
 The first 7 columns in the data set are the general data. They are the row number (variable X), the name of the subject (user_name), timestamp and time-window of each observation. The output variable "Classe" should not depend on the row number and user name. So they are going to be removed before the training. Timestamp and snapshot window are useful for studying how often people do excercise, but they are not quite related to the study of exercise quality. So they are to be removed as well.  
 
-Some variables in the original data have many invalid values (> 95%), such as "#DIV/0!" and missing values (NA). When a variable has so many these kinds of value, it would not be a good contributor to the prediction model. In this case, they are removed from the data set.  
+Some variables in the original data have many invalid values (> 95%), such as "#DIV/0!" and missing values (NA). When a variable has so many values of these kinds, it would not be a good contributor to the prediction model. In this case, they are removed from the data set.  
 
 
 ```{r, message=FALSE, warning=FALSE}
@@ -163,9 +163,9 @@ Expected Out of Sample Error rate of the models:
 * Boosting: **`r (1 - accuracy_GBM)`** (accuracy `r accuracy_GBM`)   
 * Random Forest: **`r (1 - accuracy_RF)`** (accuracy `r accuracy_RF`)   
     
-Among these models, **Random Forest** takes a little longer time to train (about 40 minutes), but it has the highest prediction accuracy (**`r accuracy_RF`**) or the lowest error rate (**`r (1 - accuracy_RF)`**). Based on these, it is selected as the prediction model.  
+Among these models, **Random Forest** takes a little longer time in training (about 40 minutes), but it has the highest prediction accuracy (**`r accuracy_RF`**) or the lowest error rate (**`r (1 - accuracy_RF)`**). Based on these results, it is selected as the prediction model.  
 
-The prediction of 20 test cases from a different data set using Random Forest is to be submitted separately.  
+P.S. The prediction of 20 test cases from a different data set using Random Forest is to be submitted separately.  
   
     
 
